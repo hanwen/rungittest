@@ -58,7 +58,12 @@ func runTest(name, outdir string) *result {
 	cmd.Stderr = &errBuf
 	err = cmd.Run()
 
-	fmt.Fprintf(f, "\n\n*** STDOUT: ***\n\n")
+	errStr := "success"
+	if err != nil {
+		errStr = err.Error()
+	}
+	fmt.Fprintf(f, "*** EXIT: %s ***\n\n", errStr)
+	fmt.Fprintf(f, "*** STDOUT: ***\n\n")
 	f.Write(outBuf.Bytes())
 	fmt.Fprintf(f, "\n\n*** STDERR: ***\n\n")
 	f.Write(errBuf.Bytes())
@@ -94,10 +99,14 @@ func main() {
 	if len(flag.Args()) == 0 {
 		log.Fatalf("usage: provide glob")
 	}
-	glob := flag.Args()[0]
-	entries, err := filepath.Glob(glob)
-	if err != nil {
-		log.Fatalf("glob: %v", err)
+
+	var entries []string
+	for _, f := range flag.Args() {
+		es, err := filepath.Glob(f)
+		if err != nil {
+			log.Fatalf("glob: %v", err)
+		}
+		entries = append(entries, es...)
 	}
 
 	if err := os.MkdirAll(*out, 0755); err != nil {
