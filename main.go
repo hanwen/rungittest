@@ -29,11 +29,15 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
+	"time"
 )
 
 type result struct {
@@ -113,6 +117,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	start := time.Now()
 	N := len(entries)
 	throttle := make(chan int, *jobs)
 	results := make(chan *result, N)
@@ -125,12 +130,25 @@ func main() {
 		}(e)
 	}
 
+	var failed []string
 	for i := range entries {
 		r := <-results
 		fmt.Printf("\r%d/%d: %-20s - %-60s ", i+1, N, r.name, r.summary)
 		if r.err != nil {
+			failed = append(failed, r.name)
 			fmt.Println()
 		}
 	}
 	fmt.Println()
+
+	sort.Strings(failed)
+	elapsed := time.Now().Sub(start)
+	if err := ioutil.WriteFile(filepath.Join(*out, "summary.txt"),
+		[]byte(fmt.Sprintf("# run %s\n# on %s, elapsed %s:\n%s",
+			os.Args, time.Now().Format(time.RFC3339), elapsed,
+			strings.Join(failed, "\n"))), 0644); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%d failures, elapsed %s\n", len(failed), elapsed)
 }
