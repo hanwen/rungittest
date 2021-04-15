@@ -133,9 +133,11 @@ func main() {
 	var failed []string
 	for i := range entries {
 		r := <-results
-		fmt.Printf("\r%d/%d: %-20s - %-60s ", i+1, N, r.name, r.summary)
+
+		summary := fmt.Sprintf("%-20s - %-60s ", r.name, r.summary)
+		fmt.Printf("\r%d/%d: %s", i+1, N, summary)
 		if r.err != nil {
-			failed = append(failed, r.name)
+			failed = append(failed, summary)
 			fmt.Println()
 		}
 	}
@@ -150,5 +152,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%d failures, elapsed %s\n", len(failed), elapsed)
+	fmt.Printf("%d failures, elapsed %s. Output to %s\n", len(failed), elapsed, *out)
 }
